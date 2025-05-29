@@ -91,9 +91,10 @@ matchmakingService.on('match-found', (match) => {
 });
 matchmakingService.on('bot-match-created', async (botMatch) => {
     console.log(`🤖 Match com bot criado: ${botMatch.gameId}`);
-    // Criar jogo contra bot
-    const gameState = gameService.createHumanVsBotGame(botMatch.player.playerId, player_types_1.BotDifficulty.MEDIUM);
     const playerSocket = io.sockets.sockets.get(botMatch.player.socketId);
+    const botDifficulty = playerSocket?.data?.preferredBotDifficulty || player_types_1.BotDifficulty.MEDIUM;
+    // Criar jogo contra bot com dificuldade escolhida
+    const gameState = gameService.createHumanVsBotGame(botMatch.player.playerId, botDifficulty);
     if (playerSocket) {
         playerSocket.emit('match-found', {
             gameId: gameState.id,
@@ -123,10 +124,20 @@ io.on('connection', (socket) => {
         playerId: socket.id,
         inQueue: false
     };
-    socket.on('join-queue', () => {
+    socket.on('join-queue', (data) => {
         console.log(`🔍 Player ${socket.id} entrou na fila`);
+        const botDifficulty = data?.botDifficulty || player_types_1.BotDifficulty.MEDIUM;
+        socket.data.preferredBotDifficulty = botDifficulty;
         matchmakingService.addPlayerToQueue(socket.id, socket.id);
         socket.data.inQueue = true;
+    });
+    socket.on('leave-queue', () => {
+        console.log(`🚪 Player ${socket.id} saiu da fila`);
+        if (socket.data.inQueue) {
+            matchmakingService.removePlayerFromQueue(socket.id);
+            socket.data.inQueue = false;
+            socket.emit('queue-left');
+        }
     });
     socket.on('make-move', async (data) => {
         console.log(`🎯 Player ${socket.id} fez jogada:`, data);

@@ -1,10 +1,12 @@
 import type { Player, PlayerSymbol } from './game.types';
 
-export enum BotDifficulty {
-  EASY = 'easy',
-  MEDIUM = 'medium',
-  HARD = 'hard'
-}
+export const BotDifficulty = {
+  EASY: 'easy',
+  MEDIUM: 'medium',
+  HARD: 'hard'
+} as const;
+
+export type BotDifficulty = typeof BotDifficulty[keyof typeof BotDifficulty];
 
 export interface MatchmakingState {
   inQueue: boolean;

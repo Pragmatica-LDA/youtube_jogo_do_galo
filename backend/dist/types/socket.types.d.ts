@@ -1,7 +1,10 @@
 import { GameState, Move, PlayerSymbol } from './game.types';
-import { Player } from './player.types';
+import { Player, BotDifficulty } from './player.types';
 export interface ClientToServerEvents {
-    'join-queue': () => void;
+    'join-queue': (data?: {
+        botDifficulty?: BotDifficulty;
+    }) => void;
+    'leave-queue': () => void;
     'make-move': (data: {
         gameId: string;
         row: number;
@@ -35,6 +38,7 @@ export interface ServerToClientEvents {
     }) => void;
     'opponent-disconnected': () => void;
     'opponent-reconnected': () => void;
+    'queue-left': () => void;
 }
 export interface InterServerEvents {
     'game-update': (gameId: string, gameState: GameState) => void;
@@ -43,5 +47,6 @@ export interface SocketData {
     playerId: string;
     currentGameId?: string;
     inQueue: boolean;
+    preferredBotDifficulty?: BotDifficulty;
 }
 //# sourceMappingURL=socket.types.d.ts.map
