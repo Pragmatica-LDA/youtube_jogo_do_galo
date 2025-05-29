@@ -80,13 +80,21 @@ VITE_BACKEND_URL=http://backend:3000
 O frontend detecta automaticamente o ambiente:
 
 1. **Variável Explícita**: Usa `VITE_BACKEND_URL` se definida
-2. **Detecção de Domínio**: Se não for localhost, assume mesmo domínio + porta 3000
+2. **Detecção de Domínio**: Se não for localhost, assume mesmo protocolo/domínio 
 3. **Fallback**: Default para `http://localhost:3000`
 
 ```javascript
 // Exemplos de detecção automática:
-// https://myapp.com → backend: https://myapp.com:3000
-// localhost:5173 → backend: http://localhost:3000
+// https://myapp.com → backend: https://myapp.com
+// http://localhost:5173 → backend: http://localhost:3000
+// https://poc4s8w0okwgowskcog4cwoc.apps-prag.com → backend: https://poc4s8w0okwgowskcog4cwoc.apps-prag.com
+```
+
+#### **⚡ Para Coolify/PaaS:**
+Deixa `VITE_BACKEND_URL` vazio (ou comenta a linha) para auto-detecção:
+```env
+# VITE_BACKEND_URL=  # Auto-detecção activada
+VITE_DEBUG=false
 ```
 
 ## 🛠️ Scripts Disponíveis

@@ -34,8 +34,8 @@ class SocketService {
     
     // Se estiver em produção (com domínio customizado)
     if (currentUrl.hostname !== 'localhost' && currentUrl.hostname !== '127.0.0.1') {
-      // Assumir que backend está no mesmo domínio, porta 3000
-      return `${currentUrl.protocol}//${currentUrl.hostname}:3000`;
+      // Em produção, assumir mesmo protocolo e domínio (sem porta específica)
+      return `${currentUrl.protocol}//${currentUrl.hostname}`;
     }
 
     // 3. Fallback para desenvolvimento
