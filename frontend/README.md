@@ -28,25 +28,81 @@ cd frontend
 # Instalar dependências
 npm install
 
-# Iniciar servidor de desenvolvimento
+# Configurar ambiente (ver secção abaixo)
+cp .env.example .env
+
+# Executar em modo desenvolvimento
 npm run dev
+
+# Ou executar build para produção
+npm run build
+npm run preview
 ```
 
-A aplicação estará disponível em `http://localhost:5173`
+## ⚙️ Configuração de Ambiente
+
+### Variáveis de Ambiente Disponíveis
+
+Cria um ficheiro `.env` na pasta `frontend/` com as seguintes configurações:
+
+```env
+# Backend Configuration (obrigatório)
+VITE_BACKEND_URL=http://localhost:3000
+
+# Environment (opcional)
+VITE_NODE_ENV=development
+
+# Debug (opcional)
+VITE_DEBUG=false
+```
+
+### 🔧 Configurações por Ambiente
+
+#### **Desenvolvimento Local:**
+```env
+VITE_BACKEND_URL=http://localhost:3000
+VITE_DEBUG=true
+```
+
+#### **Produção:**
+```env
+VITE_BACKEND_URL=https://yourdomain.com:3000
+VITE_DEBUG=false
+```
+
+#### **Docker/Containers:**
+```env
+VITE_BACKEND_URL=http://backend:3000
+```
+
+### 🌐 Auto-detecção Inteligente
+
+O frontend detecta automaticamente o ambiente:
+
+1. **Variável Explícita**: Usa `VITE_BACKEND_URL` se definida
+2. **Detecção de Domínio**: Se não for localhost, assume mesmo domínio + porta 3000
+3. **Fallback**: Default para `http://localhost:3000`
+
+```javascript
+// Exemplos de detecção automática:
+// https://myapp.com → backend: https://myapp.com:3000
+// localhost:5173 → backend: http://localhost:3000
+```
 
 ## 🛠️ Scripts Disponíveis
 
 ```bash
-# Desenvolvimento
-npm run dev          # Inicia servidor de desenvolvimento com hot reload
+# Desenvolvimento (com host 0.0.0.0)
+npm run dev
 
-# Build
-npm run build        # Cria build optimizado para produção
-npm run preview      # Pré-visualiza build de produção
+# Build para produção
+npm run build
 
-# Linting e Formatação
-npm run lint         # Verifica código com ESLint
-npm run lint:fix     # Corrige problemas automaticamente
+# Preview da build (com host 0.0.0.0)
+npm run preview
+
+# Linting
+npm run lint
 ```
 
 ## 📁 Estrutura do Projeto
@@ -54,28 +110,118 @@ npm run lint:fix     # Corrige problemas automaticamente
 ```
 frontend/
 ├── src/
-│   ├── hooks/                    # ✅ Custom Hooks
-│   │   ├── useSocket.ts          # ✅ Gestão de WebSocket
-│   │   └── useGame.ts            # ✅ Estado principal do jogo
-│   ├── services/                 # ✅ Serviços
-│   │   └── socketService.ts      # ✅ Cliente WebSocket
-│   ├── types/                    # ✅ Definições TypeScript
-│   │   ├── game.types.ts         # ✅ Tipos do jogo
-│   │   └── matchmaking.types.ts  # ✅ Tipos do matchmaking
-│   ├── components/               # 📁 Componentes futuros
-│   ├── utils/                    # 📁 Utilitários
-│   ├── styles/                   # 📁 Estilos modulares
-│   ├── App.tsx                   # ✅ Componente principal
-│   ├── App.css                   # ✅ Estilos globais
-│   └── main.tsx                  # ✅ Entry point
-├── public/                       # Arquivos estáticos
-├── dist/                         # Build de produção
-└── README.md                     # Este arquivo
+│   ├── components/       # Componentes reutilizáveis
+│   ├── hooks/           # React hooks customizados
+│   │   ├── useGame.ts   # Estado principal do jogo
+│   │   └── useSocket.ts # Gestão de WebSocket
+│   ├── services/        # Serviços externos
+│   │   └── socketService.ts # WebSocket service
+│   ├── types/           # Definições TypeScript
+│   │   ├── game.types.ts
+│   │   └── matchmaking.types.ts
+│   └── App.tsx          # Componente principal
+├── .env                 # Configurações de ambiente
+├── .env.example         # Exemplo de configurações
+└── vite.config.ts       # Configuração Vite
 ```
 
-**Legenda:**
-- ✅ = Implementado e funcional
-- 📁 = Estrutura preparada para desenvolvimento futuro
+## 🔌 WebSocket Connection
+
+O sistema conecta automaticamente ao backend via WebSocket com:
+
+- **Reconnexão automática**: 5 tentativas com delay de 1s
+- **Timeout**: 10 segundos
+- **Transporte**: WebSocket apenas
+- **Fallback inteligente**: Múltiplas estratégias de URL
+
+## 🎯 Funcionalidades do Jogo
+
+### Estados da Aplicação:
+- **Connecting**: A conectar ao servidor
+- **Disconnected**: Servidor offline
+- **Menu**: Selecção de dificuldade
+- **Queue**: Na fila de matchmaking
+- **Game**: Jogo a decorrer
+- **Result**: Resultado do jogo
+
+### Fluxo do Jogo:
+1. **Conectar** → Servidor WebSocket
+2. **Escolher** → Dificuldade do bot
+3. **Fila** → Procurar adversário (15s timeout)
+4. **Jogo** → Jogar contra humano ou bot
+5. **Resultado** → Vitória/Empate/Derrota
+
+## 🐛 Troubleshooting
+
+### Problemas Comuns:
+
+#### ❌ "Desconectado do servidor"
+```bash
+# Verificar se backend está a correr
+curl http://localhost:3000/health
+
+# Verificar configuração
+echo $VITE_BACKEND_URL
+```
+
+#### ❌ "Blocked request host not allowed"
+```bash
+# Adicionar allowedHosts no vite.config.ts
+preview: {
+  allowedHosts: true
+}
+```
+
+#### ❌ CORS Error
+```bash
+# Verificar se FRONTEND_URL está correcto no backend
+```
+
+## 🚀 Deploy
+
+### Build para Produção:
+```bash
+npm run build
+# Ficheiros gerados em: dist/
+```
+
+### Deploy com Nginx:
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+    
+    location / {
+        root /path/to/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+### Deploy com Coolify/Docker:
+- **Build Command**: `npm run build`
+- **Start Command**: `npm run preview`
+- **Publish Directory**: `/dist`
+
+## 📊 Tecnologias
+
+- **React 19** + **TypeScript**
+- **Vite** (Build tool)
+- **Socket.io-client** (WebSocket)
+- **Framer Motion** (Animações)
+- **CSS3** (Styling moderno)
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Cria branch para feature (`git checkout -b feature/amazing-feature`)
+3. Commit as mudanças (`git commit -m 'Add amazing feature'`)
+4. Push para branch (`git push origin feature/amazing-feature`)
+5. Abre Pull Request
+
+## 📄 Licença
+
+Este projeto está sob licença MIT. Ver `LICENSE` para mais detalhes.
 
 ## 🎯 Como Jogar
 

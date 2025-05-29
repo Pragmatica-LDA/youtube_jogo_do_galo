@@ -5,9 +5,41 @@ import type { QueueStatus, MatchFound, GameEndResult, BotDifficulty } from '../t
 class SocketService {
   private socket: Socket | null = null;
   private readonly serverUrl: string;
+  private readonly debug: boolean;
 
   constructor() {
-    this.serverUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    // Configuração baseada em variáveis de ambiente
+    this.serverUrl = this.getBackendUrl();
+    this.debug = import.meta.env.VITE_DEBUG === 'true';
+    
+    if (this.debug) {
+      console.log('🔧 SocketService configurado:', {
+        serverUrl: this.serverUrl,
+        environment: import.meta.env.MODE
+      });
+    }
+  }
+
+  /**
+   * Determina a URL do backend baseada no ambiente
+   */
+  private getBackendUrl(): string {
+    // 1. Variável de ambiente explícita
+    if (import.meta.env.VITE_BACKEND_URL) {
+      return import.meta.env.VITE_BACKEND_URL;
+    }
+
+    // 2. Detectar ambiente baseado na URL atual
+    const currentUrl = window.location;
+    
+    // Se estiver em produção (com domínio customizado)
+    if (currentUrl.hostname !== 'localhost' && currentUrl.hostname !== '127.0.0.1') {
+      // Assumir que backend está no mesmo domínio, porta 3000
+      return `${currentUrl.protocol}//${currentUrl.hostname}:3000`;
+    }
+
+    // 3. Fallback para desenvolvimento
+    return 'http://localhost:3000';
   }
 
   /**
@@ -18,9 +50,17 @@ class SocketService {
       return this.socket;
     }
 
+    if (this.debug) {
+      console.log('🔌 Conectando ao servidor:', this.serverUrl);
+    }
+
     this.socket = io(this.serverUrl, {
       transports: ['websocket'],
       autoConnect: true,
+      timeout: 10000,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
     });
 
     this.setupEventListeners();
@@ -99,6 +139,11 @@ class SocketService {
 
     this.socket.on('disconnect', (reason) => {
       console.log('🔌 Desconectado do servidor:', reason);
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ Erro de conexão:', error.message);
+      console.error('🔧 Verifique se o backend está rodando em:', this.serverUrl);
     });
 
     this.socket.on('error', (data: { message: string; code?: string }) => {
